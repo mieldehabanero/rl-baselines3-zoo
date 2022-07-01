@@ -48,8 +48,9 @@ from utils.callbacks import SaveVecNormalizeCallback, TrialEvalCallback
 from utils.hyperparams_opt import HYPERPARAMS_SAMPLER
 from utils.utils import ALGOS, get_callback_list, get_latest_run_id, get_wrapper_class, linear_schedule
 
-# Import custom callbacks
+# Import custom callbacks and CNN feature extractors
 from gym_qco.common.callbacks import QCOEvalCallback
+import gym_qco.common.extractors
 
 class ExperimentManager:
     """
@@ -573,16 +574,19 @@ class ExperimentManager:
 
         if not is_vecenv_wrapped(env, VecTransposeImage):
             wrap_with_vectranspose = False
+            check_channels = False
+            if self.env_id.contains("gym-qco"):
+                check_channels = True
             if isinstance(env.observation_space, gym.spaces.Dict):
                 # If even one of the keys is a image-space in need of transpose, apply transpose
                 # If the image spaces are not consistent (for instance one is channel first,
                 # the other channel last), VecTransposeImage will throw an error
                 for space in env.observation_space.spaces.values():
                     wrap_with_vectranspose = wrap_with_vectranspose or (
-                        is_image_space(space) and not is_image_space_channels_first(space)
+                        is_image_space(space, check_channels=check_channels) and not is_image_space_channels_first(space)
                     )
             else:
-                wrap_with_vectranspose = is_image_space(env.observation_space) and not is_image_space_channels_first(
+                wrap_with_vectranspose = is_image_space(env.observation_space, check_channels=check_channels) and not is_image_space_channels_first(
                     env.observation_space
                 )
 

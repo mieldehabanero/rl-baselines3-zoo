@@ -2,7 +2,7 @@
 
 PARENT=stablebaselines/stable-baselines3
 
-TAG=stablebaselines/rl-baselines3-zoo
+TAG=habaneroforever/rl-baselines3-zoo
 VERSION=1.4.1a0
 
 if [[ ${USE_GPU} == "True" ]]; then

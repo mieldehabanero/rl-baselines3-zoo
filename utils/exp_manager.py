@@ -152,15 +152,16 @@ class ExperimentManager:
 
         # Logging
         self.log_folder = log_folder
-        self.tensorboard_log = None if tensorboard_log == "" else os.path.join(tensorboard_log, env_id)
+        self.tensorboard_log = None if tensorboard_log == "" else tensorboard_log
         self.verbose = verbose
         self.args = args
         self.log_interval = log_interval
         self.save_replay_buffer = save_replay_buffer
 
-        self.log_path = f"{log_folder}/{self.algo}/"
+        self.log_path = f"{self.tensorboard_log}/checkpoints"
+        self.algo_label = self.algo.upper()
         self.save_path = os.path.join(
-            self.log_path, f"{self.env_id}_{get_latest_run_id(self.log_path, self.env_id) + 1}{uuid_str}"
+            self.log_path, f"{self.algo_label}_{get_latest_run_id(self.log_path, self.algo_label) + 1}{uuid_str}"
         )
         self.params_path = f"{self.save_path}/{self.env_id}"
 

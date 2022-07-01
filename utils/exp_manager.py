@@ -209,6 +209,8 @@ class ExperimentManager:
         if len(self.callbacks) > 0:
             kwargs["callback"] = self.callbacks
 
+        kwargs["tb_log_name"] = self.algo.upper()
+
         # Special case for ARS
         if self.algo == "ars" and self.n_envs > 1:
             kwargs["async_eval"] = AsyncEval(

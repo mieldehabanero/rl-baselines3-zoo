@@ -60,6 +60,8 @@ from rl_zoo3.utils import (
     get_wrapper_class,
 )
 
+# Import custom callbacks
+from gym_qco.common.callbacks import QCOEvalCallback
 
 class ExperimentManager:
     """
@@ -592,7 +594,13 @@ class ExperimentManager:
                 print("Creating test environment")
 
             save_vec_normalize = SaveVecNormalizeCallback(save_freq=1, save_path=self.params_path)
-            eval_callback = EvalCallback(
+
+            eval_callback_class = EvalCallback
+            # Special case for gym_qco environments
+            if self.env_id.contains("gym-qco"):
+                eval_callback_class = QCOEvalCallback
+
+            eval_callback = eval_callback_class(
                 self.create_envs(self.n_eval_envs, eval_env=True),
                 callback_on_new_best=save_vec_normalize,
                 best_model_save_path=self.save_path,

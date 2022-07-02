@@ -599,7 +599,7 @@ class ExperimentManager:
 
             eval_callback_class = EvalCallback
             # Special case for gym_qco environments
-            if self.env_id.contains("gym-qco"):
+            if "gym-qco" in self.env_name.gym_id:
                 eval_callback_class = QCOEvalCallback
 
             eval_callback = eval_callback_class(

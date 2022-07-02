@@ -458,7 +458,7 @@ class ExperimentManager:
 
             eval_callback_class = EvalCallback
             # Special case for gym_qco environments
-            if self.env_id.contains("gym-qco"):
+            if "gym-qco" in self.env_id:
                 eval_callback_class = QCOEvalCallback
 
             eval_callback = eval_callback_class(
@@ -576,7 +576,7 @@ class ExperimentManager:
         if not is_vecenv_wrapped(env, VecTransposeImage):
             wrap_with_vectranspose = False
             check_channels = False
-            if self.env_id.contains("gym-qco"):
+            if "gym-qco" in self.env_id:
                 check_channels = True
             if isinstance(env.observation_space, gym.spaces.Dict):
                 # If even one of the keys is a image-space in need of transpose, apply transpose

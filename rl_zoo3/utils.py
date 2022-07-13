@@ -25,8 +25,6 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv,
 from torch import nn as nn
 
 # Custom agents
-from gym_qco.dqn_mask import MaskableDQN
-from gym_qco.rainbow import MaskableRainbow
 from sb3_contrib import MaskablePPO
 
 ALGOS: dict[str, type[BaseAlgorithm]] = {
@@ -43,9 +41,7 @@ ALGOS: dict[str, type[BaseAlgorithm]] = {
     "tqc": TQC,
     "trpo": TRPO,
     "ppo_lstm": RecurrentPPO,
-    "mdqn": MaskableDQN,
     "mppo": MaskablePPO,
-    "mrainbow": MaskableRainbow,
 }
 
 

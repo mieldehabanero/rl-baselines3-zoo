@@ -60,9 +60,6 @@ from rl_zoo3.utils import (
     get_wrapper_class,
 )
 
-# Import custom callbacks and CNN feature extractors
-from gym_qco.common.callbacks import QCOEvalCallback
-import gym_qco.common.extractors
 
 class ExperimentManager:
     """
@@ -598,9 +595,6 @@ class ExperimentManager:
             save_vec_normalize = SaveVecNormalizeCallback(save_freq=1, save_path=self.params_path)
 
             eval_callback_class = EvalCallback
-            # Special case for gym_qco environments
-            if "gym-qco" in self.env_name.gym_id:
-                eval_callback_class = QCOEvalCallback
 
             eval_callback = eval_callback_class(
                 self.create_envs(self.n_eval_envs, eval_env=True),

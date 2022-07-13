@@ -166,18 +166,14 @@ def get_callback_list(hyperparams: dict[str, Any]) -> list[BaseCallback]:
     :return:
     """
 
-    callbacks: list[BaseCallback] = []
+    def get_callbacks(callback_names: Any) -> list[BaseCallback]:
+        callbacks: list[BaseCallback] = []
 
-    if "callback" in hyperparams.keys():
-        callback_name = hyperparams.get("callback")
-
-        if callback_name is None:
+        if callback_names is None:
             return callbacks
 
-        if not isinstance(callback_name, list):
-            callback_names = [callback_name]
-        else:
-            callback_names = callback_name
+        if not isinstance(callback_names, list):
+            callback_names = [callback_names]
 
         # Handle multiple wrappers
         for callback_name in callback_names:
@@ -200,6 +196,14 @@ def get_callback_list(hyperparams: dict[str, Any]) -> list[BaseCallback]:
             else:
                 callback_class = get_class_by_name(callback_name)
                 callbacks.append(callback_class(**kwargs))
+
+        return callbacks
+
+    callbacks: list[BaseCallback] = []
+
+    if "callback" in hyperparams.keys():
+        callback_names = hyperparams.get("callback")
+        callbacks = get_callbacks(callback_names)
 
     return callbacks
 

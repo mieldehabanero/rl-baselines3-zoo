@@ -48,9 +48,6 @@ from utils.callbacks import SaveVecNormalizeCallback, TrialEvalCallback
 from utils.hyperparams_opt import HYPERPARAMS_SAMPLER
 from utils.utils import ALGOS, get_callback_list, get_latest_run_id, get_wrapper_class, linear_schedule
 
-# Import custom callbacks and CNN feature extractors
-from gym_qco.common.callbacks import QCOEvalCallback
-import gym_qco.common.extractors
 
 class ExperimentManager:
     """
@@ -457,9 +454,6 @@ class ExperimentManager:
             save_vec_normalize = SaveVecNormalizeCallback(save_freq=1, save_path=self.params_path)
 
             eval_callback_class = EvalCallback
-            # Special case for gym_qco environments
-            if "gym-qco" in self.env_id:
-                eval_callback_class = QCOEvalCallback
 
             eval_callback = eval_callback_class(
                 self.create_envs(self.n_eval_envs, eval_env=True),

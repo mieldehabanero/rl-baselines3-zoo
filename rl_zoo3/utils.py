@@ -149,7 +149,7 @@ def get_class_by_name(name: str) -> type:
     return getattr(module, get_class_name(name))
 
 
-def get_callback_list(hyperparams: dict[str, Any]) -> list[BaseCallback]:
+def get_callback_list(hyperparams: dict[str, Any]) -> tuple[list[BaseCallback], list[BaseCallback]]:
     """
     Get one or more Callback class specified as a hyper-parameter
     "callback".
@@ -200,12 +200,17 @@ def get_callback_list(hyperparams: dict[str, Any]) -> list[BaseCallback]:
         return callbacks
 
     callbacks: list[BaseCallback] = []
+    eval_callbacks: list[BaseCallback] = []
 
     if "callback" in hyperparams.keys():
         callback_names = hyperparams.get("callback")
         callbacks = get_callbacks(callback_names)
 
-    return callbacks
+    if "eval_callback" in hyperparams.keys():
+        eval_callback_names = hyperparams.get("eval_callback")
+        eval_callbacks = get_callbacks(eval_callback_names)
+
+    return callbacks, eval_callbacks
 
 
 def create_test_env(

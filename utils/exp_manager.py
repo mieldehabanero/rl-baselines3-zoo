@@ -23,7 +23,7 @@ from sb3_contrib.common.vec_env import AsyncEval
 # For using HER with GoalEnv
 from stable_baselines3 import HerReplayBuffer  # noqa: F401
 from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
 from stable_baselines3.common.preprocessing import is_image_space, is_image_space_channels_first
@@ -116,6 +116,7 @@ class ExperimentManager:
         # Callbacks
         self.specified_callbacks = []
         self.callbacks = []
+        self.eval_callbacks = []
         self.save_freq = save_freq
         self.eval_freq = eval_freq
         self.n_eval_episodes = n_eval_episodes
@@ -170,7 +171,7 @@ class ExperimentManager:
         :return: the initialized RL model
         """
         hyperparams, saved_hyperparams = self.read_hyperparameters()
-        hyperparams, self.env_wrapper, self.callbacks, self.vec_env_wrapper = self._preprocess_hyperparams(hyperparams)
+        hyperparams, self.env_wrapper, self.callbacks, self.eval_callbacks, self.vec_env_wrapper = self._preprocess_hyperparams(hyperparams)
 
         self.create_log_folder()
         self.create_callbacks()
@@ -387,12 +388,15 @@ class ExperimentManager:
         if "vec_env_wrapper" in hyperparams.keys():
             del hyperparams["vec_env_wrapper"]
 
-        callbacks = get_callback_list(hyperparams)
+        callbacks, eval_callbacks = get_callback_list(hyperparams)
         if "callback" in hyperparams.keys():
             self.specified_callbacks = hyperparams["callback"]
             del hyperparams["callback"]
 
-        return hyperparams, env_wrapper, callbacks, vec_env_wrapper
+        if "eval_callback" in hyperparams.keys():
+            del hyperparams["eval_callback"]
+
+        return hyperparams, env_wrapper, callbacks, eval_callbacks, vec_env_wrapper
 
     def _preprocess_action_noise(
         self, hyperparams: Dict[str, Any], saved_hyperparams: Dict[str, Any], env: VecEnv
@@ -453,11 +457,14 @@ class ExperimentManager:
 
             save_vec_normalize = SaveVecNormalizeCallback(save_freq=1, save_path=self.params_path)
 
-            eval_callback_class = EvalCallback
+            callbacks_after_eval = None
+            if len(self.eval_callbacks) > 0:
+                callbacks_after_eval = CallbackList(self.eval_callbacks)
 
-            eval_callback = eval_callback_class(
+            eval_callback = EvalCallback(
                 self.create_envs(self.n_eval_envs, eval_env=True),
                 callback_on_new_best=save_vec_normalize,
+                callback_after_eval=callbacks_after_eval,
                 best_model_save_path=self.save_path,
                 n_eval_episodes=self.n_eval_episodes,
                 log_path=self.save_path,
@@ -690,7 +697,7 @@ class ExperimentManager:
         path = None
         if self.optimization_log_path is not None:
             path = os.path.join(self.optimization_log_path, f"trial_{str(trial.number)}")
-        callbacks = get_callback_list({"callback": self.specified_callbacks})
+        callbacks, __ = get_callback_list({"callback": self.specified_callbacks})
         eval_callback = TrialEvalCallback(
             eval_env,
             trial,

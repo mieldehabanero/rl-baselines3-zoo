@@ -139,7 +139,7 @@ if __name__ == "__main__":  # noqa: C901
         importlib.import_module(env_module)
 
     algo = args.algo
-    if "custom_algo" in args.hyperparams:
+    if args.hyperparams is not None and "custom_algo" in args.hyperparams:
         custom_algo = args.hyperparams["custom_algo"]
 
         algo = custom_algo["label"]

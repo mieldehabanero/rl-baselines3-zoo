@@ -37,6 +37,7 @@ ALGOS = {
     "trpo": TRPO,
     "ppo_lstm": RecurrentPPO,
     "mppo": MaskablePPO,
+    "custom": None,
 }
 
 

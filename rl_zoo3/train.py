@@ -171,6 +171,17 @@ def train() -> None:
     for env_module in args.gym_packages:
         importlib.import_module(env_module)
 
+    algo = args.algo
+    if args.hyperparams is not None and "custom_algo" in args.hyperparams:
+        custom_algo = args.hyperparams["custom_algo"]
+
+        algo = custom_algo["label"]
+        module, class_name = custom_algo["class"].rsplit(".", 1)
+        class_ = getattr(importlib.import_module(module), class_name)
+        ALGOS[algo] = class_
+
+        del args.hyperparams["custom_algo"]
+
     env_id = args.env
     registered_envs = set(gym.envs.registry.keys())
 
@@ -232,7 +243,7 @@ def train() -> None:
 
     exp_manager = ExperimentManager(
         args,
-        args.algo,
+        algo,
         env_id,
         args.log_folder,
         args.tensorboard_log,

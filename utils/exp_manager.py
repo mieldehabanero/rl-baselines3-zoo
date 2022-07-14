@@ -211,7 +211,7 @@ class ExperimentManager:
         if len(self.callbacks) > 0:
             kwargs["callback"] = self.callbacks
 
-        kwargs["tb_log_name"] = self.algo.upper()
+        kwargs["tb_log_name"] = self.algo_label
 
         # Special case for ARS
         if self.algo == "ars" and self.n_envs > 1:

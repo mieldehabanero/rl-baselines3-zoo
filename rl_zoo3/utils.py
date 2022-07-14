@@ -42,7 +42,6 @@ ALGOS: dict[str, type[BaseAlgorithm]] = {
     "trpo": TRPO,
     "ppo_lstm": RecurrentPPO,
     "mppo": MaskablePPO,
-    "custom": None,
 }
 
 

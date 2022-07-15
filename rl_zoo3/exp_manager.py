@@ -7,6 +7,7 @@ import time
 import warnings
 from collections import OrderedDict
 from collections.abc import Callable
+from copy import deepcopy
 from pathlib import Path
 from pprint import pprint
 from typing import Any
@@ -377,8 +378,10 @@ class ExperimentManager:
             if self._eval_env_kwargs_args is None:
                 self.eval_env_kwargs = hyperparams["env_kwargs"]
 
+        # deepcopy to avoid issues with callback params
+        hyperparams_copy = deepcopy(hyperparams)
         # Sort hyperparams that will be saved
-        saved_hyperparams = OrderedDict([(key, hyperparams[key]) for key in sorted(hyperparams.keys())])
+        saved_hyperparams = OrderedDict([(key, hyperparams_copy[key]) for key in sorted(hyperparams_copy.keys())])
 
         # Always print used hyperparameters
         print("Default hyperparameters for environment (ones being tuned will be overridden):")

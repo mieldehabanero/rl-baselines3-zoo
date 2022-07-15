@@ -149,7 +149,35 @@ def get_class_by_name(name: str) -> type:
     return getattr(module, get_class_name(name))
 
 
-def get_callback_list(hyperparams: dict[str, Any]) -> tuple[list[BaseCallback], list[BaseCallback]]:
+def get_callback(callback_name: str | dict[str, Any] | BaseCallback) -> BaseCallback:
+    if isinstance(callback_name, BaseCallback):
+        return callback_name
+
+    # Handle keyword arguments
+    if isinstance(callback_name, dict):
+        assert len(callback_name) == 1, (
+            "You have an error in the formatting "
+            f"of your YAML file near {callback_name}. "
+            "You should check the indentation."
+        )
+        callback_dict = callback_name
+        callback_name = next(iter(callback_dict.keys()))
+        kwargs = callback_dict[callback_name]
+
+        # Handle EventCallbacks child-callbacks
+        child_cb_keys = ["callback", "callback_on_new_best", "callback_after_eval"]
+        for child_cb_key in child_cb_keys:
+            if child_cb_key in kwargs and kwargs[child_cb_key] is not None:
+                kwargs[child_cb_key] = get_callback(kwargs[child_cb_key])
+    else:
+        kwargs = {}
+    callback_class = get_class_by_name(callback_name)
+    callback = callback_class(**kwargs)
+
+    return callback
+
+
+def get_callback_list(hyperparams: dict[str, Any]) -> list[BaseCallback]:
     """
     Get one or more Callback class specified as a hyper-parameter
     "callback".
@@ -166,8 +194,10 @@ def get_callback_list(hyperparams: dict[str, Any]) -> tuple[list[BaseCallback], 
     :return:
     """
 
-    def get_callbacks(callback_names: Any) -> list[BaseCallback]:
-        callbacks: list[BaseCallback] = []
+    callbacks: list[BaseCallback] = []
+
+    if "callback" in hyperparams.keys():
+        callback_names = hyperparams.get("callback")
 
         if callback_names is None:
             return callbacks
@@ -175,42 +205,11 @@ def get_callback_list(hyperparams: dict[str, Any]) -> tuple[list[BaseCallback], 
         if not isinstance(callback_names, list):
             callback_names = [callback_names]
 
-        # Handle multiple wrappers
         for callback_name in callback_names:
-            # Handle keyword arguments
-            if isinstance(callback_name, dict):
-                assert len(callback_name) == 1, (
-                    "You have an error in the formatting "
-                    f"of your YAML file near {callback_name}. "
-                    "You should check the indentation."
-                )
-                callback_dict = callback_name
-                callback_name = next(iter(callback_dict.keys()))
-                kwargs = callback_dict[callback_name]
-            else:
-                kwargs = {}
+            callback = get_callback(callback_name)
+            callbacks.append(callback)
 
-            if isinstance(callback_name, BaseCallback):
-                # No conversion needed
-                callbacks.append(callback_name)
-            else:
-                callback_class = get_class_by_name(callback_name)
-                callbacks.append(callback_class(**kwargs))
-
-        return callbacks
-
-    callbacks: list[BaseCallback] = []
-    eval_callbacks: list[BaseCallback] = []
-
-    if "callback" in hyperparams.keys():
-        callback_names = hyperparams.get("callback")
-        callbacks = get_callbacks(callback_names)
-
-    if "eval_callback" in hyperparams.keys():
-        eval_callback_names = hyperparams.get("eval_callback")
-        eval_callbacks = get_callbacks(eval_callback_names)
-
-    return callbacks, eval_callbacks
+    return callbacks
 
 
 def create_test_env(

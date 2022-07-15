@@ -28,7 +28,7 @@ from sb3_contrib.common.vec_env import AsyncEval
 # For using HER with GoalEnv
 from stable_baselines3 import HerReplayBuffer
 from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback, EvalCallback, ProgressBarCallback
+from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback, ProgressBarCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
 from stable_baselines3.common.preprocessing import is_image_space, is_image_space_channels_first
@@ -54,6 +54,7 @@ from rl_zoo3.hyperparams_opt import HYPERPARAMS_CONVERTER, HYPERPARAMS_SAMPLER
 from rl_zoo3.utils import (
     ALGOS,
     SimpleLinearSchedule,
+    get_callback,
     get_callback_list,
     get_class_by_name,
     get_latest_run_id,
@@ -150,7 +151,7 @@ class ExperimentManager:
         # Use env-kwargs if eval_env_kwargs was not specified
         self._eval_env_kwargs_args = eval_env_kwargs
         self.eval_env_kwargs: dict[str, Any] = eval_env_kwargs or self.env_kwargs
-        self.eval_callbacks: list[BaseCallback] = []
+        self.eval_callback: str | dict[str, Any] | None = None
         self.save_freq = save_freq
         self.eval_freq = eval_freq
         self.n_eval_episodes = n_eval_episodes
@@ -209,7 +210,7 @@ class ExperimentManager:
         :return: the initialized RL model
         """
         unprocessed_hyperparams, saved_hyperparams = self.read_hyperparameters()
-        hyperparams, self.env_wrapper, self.callbacks, self.eval_callbacks, self.vec_env_wrapper = (
+        hyperparams, self.env_wrapper, self.callbacks, self.eval_callback, self.vec_env_wrapper = (
             self._preprocess_hyperparams(unprocessed_hyperparams)
         )
 
@@ -446,7 +447,9 @@ class ExperimentManager:
 
     def _preprocess_hyperparams(  # noqa: C901
         self, hyperparams: dict[str, Any]
-    ) -> tuple[dict[str, Any], Callable | None, list[BaseCallback], list[BaseCallback], Callable | None]:
+    ) -> tuple[
+        dict[str, Any], Callable | None, list[BaseCallback], str | dict[str, Any] | None, Callable | None
+    ]:
         self.n_envs = hyperparams.get("n_envs", 1)
 
         if self.verbose > 0:
@@ -521,15 +524,18 @@ class ExperimentManager:
         if "vec_env_wrapper" in hyperparams.keys():
             del hyperparams["vec_env_wrapper"]
 
-        callbacks, eval_callbacks = get_callback_list(hyperparams)
+        callbacks = get_callback_list(hyperparams)
         if "callback" in hyperparams.keys():
             self.specified_callbacks = hyperparams["callback"]
             del hyperparams["callback"]
 
+        # Save hyperparams but don't create yet, eval_env is missing
+        eval_callback = None
         if "eval_callback" in hyperparams.keys():
+            eval_callback = hyperparams["eval_callback"]
             del hyperparams["eval_callback"]
 
-        return hyperparams, env_wrapper, callbacks, eval_callbacks, vec_env_wrapper
+        return hyperparams, env_wrapper, callbacks, eval_callback, vec_env_wrapper
 
     def _preprocess_action_noise(
         self, hyperparams: dict[str, Any], saved_hyperparams: dict[str, Any], env: VecEnv
@@ -596,22 +602,40 @@ class ExperimentManager:
             if self.verbose > 0:
                 print("Creating test environment")
 
-            save_vec_normalize = SaveVecNormalizeCallback(save_freq=1, save_path=self.params_path)
+            eval_env = self.create_envs(self.n_eval_envs, eval_env=True)
 
-            callbacks_after_eval = None
-            if len(self.eval_callbacks) > 0:
-                callbacks_after_eval = CallbackList(self.eval_callbacks)
+            if self.eval_callback is None:
+                save_vec_normalize = SaveVecNormalizeCallback(save_freq=1, save_path=self.params_path)
 
-            eval_callback = EvalCallback(
-                self.create_envs(self.n_eval_envs, eval_env=True),
-                callback_on_new_best=save_vec_normalize,
-                callback_after_eval=callbacks_after_eval,
-                best_model_save_path=self.save_path,
-                n_eval_episodes=self.n_eval_episodes,
-                log_path=self.save_path,
-                eval_freq=self.eval_freq,
-                deterministic=self.deterministic_eval,
-            )
+                eval_callback = EvalCallback(
+                    eval_env,
+                    callback_on_new_best=save_vec_normalize,
+                    best_model_save_path=self.save_path,
+                    n_eval_episodes=self.n_eval_episodes,
+                    log_path=self.save_path,
+                    eval_freq=self.eval_freq,
+                    deterministic=self.deterministic_eval,
+                )
+            else:
+                if isinstance(self.eval_callback, str):
+                    callback_name = self.eval_callback
+                    params = {}
+                else:
+                    callback_name = list(self.eval_callback.keys())[0]
+                    params = self.eval_callback[callback_name]
+
+                # these hyperparameters override eval_callback parameters
+                params.update({
+                    "eval_env": eval_env,
+                    "n_eval_episodes": self.n_eval_episodes,
+                    "eval_freq": self.eval_freq,
+                    "log_path": self.log_path,
+                    "best_model_save_path": self.save_path,
+                    "deterministic": self.deterministic_eval,
+                })
+
+                callback_dict = {callback_name: params}
+                eval_callback = get_callback(callback_dict)
 
             self.callbacks.append(eval_callback)
 
@@ -862,7 +886,7 @@ class ExperimentManager:
         path = None
         if self.optimization_log_path is not None:
             path = os.path.join(self.optimization_log_path, f"trial_{trial.number!s}")
-        callbacks, __ = get_callback_list({"callback": self.specified_callbacks})
+        callbacks = get_callback_list({"callback": self.specified_callbacks})
         eval_callback = TrialEvalCallback(
             eval_env,
             trial,

@@ -111,7 +111,7 @@ class ExperimentManager:
         self.vec_env_wrapper = None
 
         self.vec_env_kwargs = {}
-        # self.vec_env_kwargs = {} if vec_env_type == "dummy" else {"start_method": "fork"}
+        self.vec_env_kwargs = {} if vec_env_type == "dummy" else {"start_method": "fork"}
 
         # Callbacks
         self.specified_callbacks = []

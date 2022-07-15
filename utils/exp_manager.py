@@ -12,6 +12,7 @@ import numpy as np
 import optuna
 import torch as th
 import yaml
+from copy import deepcopy
 from optuna.integration.skopt import SkoptSampler
 from optuna.pruners import BasePruner, MedianPruner, NopPruner, SuccessiveHalvingPruner
 from optuna.samplers import BaseSampler, RandomSampler, TPESampler
@@ -281,8 +282,10 @@ class ExperimentManager:
         if self.custom_hyperparams is not None:
             # Overwrite hyperparams if needed
             hyperparams.update(self.custom_hyperparams)
+        # deepcopy to avoid issues with callback params
+        hyperparams_copy = deepcopy(hyperparams)
         # Sort hyperparams that will be saved
-        saved_hyperparams = OrderedDict([(key, hyperparams[key]) for key in sorted(hyperparams.keys())])
+        saved_hyperparams = OrderedDict([(key, hyperparams_copy[key]) for key in sorted(hyperparams_copy.keys())])
 
         if self.verbose > 0:
             print("Default hyperparameters for environment (ones being tuned will be overridden):")

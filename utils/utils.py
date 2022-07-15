@@ -139,6 +139,13 @@ def get_callback(callback_name: Dict[str, Any]) -> BaseCallback:
         callback_dict = callback_name
         callback_name = list(callback_dict.keys())[0]
         kwargs = callback_dict[callback_name]
+
+        # Handle EventCallbacks child-callback
+        if "callback" in kwargs:
+            child_cb = get_callback(kwargs["callback"])
+            kwargs.update({
+                "callback": child_cb
+            })
     else:
         kwargs = {}
     callback_module = importlib.import_module(get_module_name(callback_name))

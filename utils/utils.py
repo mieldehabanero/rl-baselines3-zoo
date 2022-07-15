@@ -140,12 +140,14 @@ def get_callback(callback_name: Dict[str, Any]) -> BaseCallback:
         callback_name = list(callback_dict.keys())[0]
         kwargs = callback_dict[callback_name]
 
-        # Handle EventCallbacks child-callback
-        if "callback" in kwargs:
-            child_cb = get_callback(kwargs["callback"])
-            kwargs.update({
-                "callback": child_cb
-            })
+        # Handle EventCallbacks child-callbacks
+        child_cb_keys = ["callback", "callback_on_new_best", "callback_after_eval"]
+        for child_cb_key in child_cb_keys:
+            if child_cb_key in kwargs:
+                child_cb = get_callback(kwargs[child_cb_key])
+                kwargs.update({
+                    child_cb_key: child_cb
+                })
     else:
         kwargs = {}
     callback_module = importlib.import_module(get_module_name(callback_name))
@@ -185,22 +187,6 @@ def get_callback_list(hyperparams: Dict[str, Any]) -> List[BaseCallback]:
             callbacks.append(callback)
 
     return callbacks
-
-
-def get_eval_callback(callback: Dict[str, Any]) -> EvalCallback:
-    if "callback_on_new_best" in callback:
-        callback_on_new_best = callback["callback_on_new_best"]
-        callback["callback_on_new_best"] = get_callback(callback_on_new_best)
-
-    if "callback_after_eval" in callback:
-        callback_after_eval = callback["callback_after_eval"]
-        callback["callback_after_eval"] = get_callback(callback_after_eval)
-
-        callback["callback_after_eval"] = get_callback(callback_after_eval)
-
-    eval_callback = get_callback(callback)
-
-    return eval_callback
 
 def create_test_env(
     env_id: str,

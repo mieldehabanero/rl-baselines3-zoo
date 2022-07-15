@@ -47,7 +47,7 @@ from torch import nn as nn  # noqa: F401
 import utils.import_envs  # noqa: F401 pytype: disable=import-error
 from utils.callbacks import SaveVecNormalizeCallback, TrialEvalCallback
 from utils.hyperparams_opt import HYPERPARAMS_SAMPLER
-from utils.utils import ALGOS, get_eval_callback, get_callback_list, get_latest_run_id, get_wrapper_class, linear_schedule
+from utils.utils import ALGOS, get_callback, get_callback_list, get_latest_run_id, get_wrapper_class, linear_schedule
 
 
 class ExperimentManager:
@@ -494,7 +494,7 @@ class ExperimentManager:
                 })
 
                 callback_dict = {callback_name: params}
-                eval_callback = get_eval_callback(callback_dict)
+                eval_callback = get_callback(callback_dict)
 
             self.callbacks.append(eval_callback)
 

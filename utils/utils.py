@@ -12,7 +12,7 @@ import yaml
 from huggingface_hub import HfApi
 from sb3_contrib import ARS, QRDQN, TQC, TRPO, RecurrentPPO
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike  # noqa: F401
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack, VecNormalize
@@ -122,6 +122,33 @@ def get_wrapper_class(hyperparams: Dict[str, Any], key: str = "env_wrapper") -> 
         return None
 
 
+def get_callback(callback_name: Dict[str, Any]) -> BaseCallback:
+    def get_module_name(callback_name):
+        return ".".join(callback_name.split(".")[:-1])
+
+    def get_class_name(callback_name):
+        return callback_name.split(".")[-1]
+
+    # Handle keyword arguments
+    if isinstance(callback_name, dict):
+        assert len(callback_name) == 1, (
+            "You have an error in the formatting "
+            f"of your YAML file near {callback_name}. "
+            "You should check the indentation."
+        )
+        callback_dict = callback_name
+        callback_name = list(callback_dict.keys())[0]
+        kwargs = callback_dict[callback_name]
+    else:
+        kwargs = {}
+    callback_module = importlib.import_module(get_module_name(callback_name))
+    callback_class = getattr(callback_module, get_class_name(callback_name))
+    print(kwargs)
+    callback = callback_class(**kwargs)
+
+    return callback
+
+
 def get_callback_list(hyperparams: Dict[str, Any]) -> List[BaseCallback]:
     """
     Get one or more Callback class specified as a hyper-parameter
@@ -139,51 +166,35 @@ def get_callback_list(hyperparams: Dict[str, Any]) -> List[BaseCallback]:
     :return:
     """
 
-    def get_module_name(callback_name):
-        return ".".join(callback_name.split(".")[:-1])
+    callbacks = []
 
-    def get_class_name(callback_name):
-        return callback_name.split(".")[-1]
-
-    def get_callbacks(callback_names):
-        callbacks = []
+    if "callback" in hyperparams.keys():
+        callback_names = hyperparams.get("callback")
 
         if not isinstance(callback_names, list):
             callback_names = [callback_names]
 
-        # Handle multiple wrappers
         for callback_name in callback_names:
-            # Handle keyword arguments
-            if isinstance(callback_name, dict):
-                assert len(callback_name) == 1, (
-                    "You have an error in the formatting "
-                    f"of your YAML file near {callback_name}. "
-                    "You should check the indentation."
-                )
-                callback_dict = callback_name
-                callback_name = list(callback_dict.keys())[0]
-                kwargs = callback_dict[callback_name]
-            else:
-                kwargs = {}
-            callback_module = importlib.import_module(get_module_name(callback_name))
-            callback_class = getattr(callback_module, get_class_name(callback_name))
-            callbacks.append(callback_class(**kwargs))
-        
-        return callbacks
+            callback = get_callback(callback_name)
+            callbacks.append(callback)
 
-    callbacks = []
-    eval_callbacks = []
+    return callbacks
 
-    if "callback" in hyperparams.keys():
-        callback_names = hyperparams.get("callback")
-        callbacks = get_callbacks(callback_names)
 
-    if "eval_callback" in hyperparams.keys():
-        eval_callback_names = hyperparams.get("eval_callback")
-        eval_callbacks = get_callbacks(eval_callback_names)
+def get_eval_callback(callback: Dict[str, Any]) -> EvalCallback:
+    if "callback_on_new_best" in callback:
+        callback_on_new_best = callback["callback_on_new_best"]
+        callback["callback_on_new_best"] = get_callback(callback_on_new_best)
 
-    return callbacks, eval_callbacks
+    if "callback_after_eval" in callback:
+        callback_after_eval = callback["callback_after_eval"]
+        callback["callback_after_eval"] = get_callback(callback_after_eval)
 
+        callback["callback_after_eval"] = get_callback(callback_after_eval)
+
+    eval_callback = get_callback(callback)
+
+    return eval_callback
 
 def create_test_env(
     env_id: str,

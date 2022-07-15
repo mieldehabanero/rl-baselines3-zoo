@@ -143,7 +143,6 @@ def get_callback(callback_name: Dict[str, Any]) -> BaseCallback:
         kwargs = {}
     callback_module = importlib.import_module(get_module_name(callback_name))
     callback_class = getattr(callback_module, get_class_name(callback_name))
-    print(kwargs)
     callback = callback_class(**kwargs)
 
     return callback

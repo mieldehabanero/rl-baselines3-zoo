@@ -8,7 +8,7 @@ VERSION=1.5.1a6
 
 if [[ ${USE_GPU} == "True" ]]; then
   PARENT=${GPU_PARENT}
-  PYTORCH_DEPS="cudatoolkit==11.7"
+  PYTORCH_DEPS="cudatoolkit=11.6"
 else
   PARENT=${CPU_PARENT}
   PYTORCH_DEPS="cpuonly"

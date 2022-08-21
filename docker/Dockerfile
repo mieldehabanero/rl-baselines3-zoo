@@ -45,6 +45,7 @@ RUN mkdir -p ${CODE_DIR}/rl_zoo && \
     pip install \
         opencv-python-headless \
         "highway-env==1.5.0" && \
+    pip install --upgrade requests && \
     rm -rf $HOME/.cache/pip
 
 ENV PATH=$VENV/bin:$PATH

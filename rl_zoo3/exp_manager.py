@@ -367,6 +367,12 @@ class ExperimentManager:
             study_hyperparams = self.load_trial(self.storage, self.study_name, self.trial_id)
             hyperparams.update(study_hyperparams)
 
+        if "env_kwargs" in list(hyperparams.keys()):
+            env_kwargs = hyperparams["env_kwargs"]
+            env_kwargs.update(self.env_kwargs)
+            self.env_kwargs = env_kwargs
+            del hyperparams["env_kwargs"]
+
         if self.custom_hyperparams is not None:
             # Overwrite hyperparams if needed
             hyperparams.update(self.custom_hyperparams)

@@ -1,0 +1,38 @@
+gym_qco/routing-layer-chalmers-6-v0:
+  n_timesteps: !!float 2e5
+  policy: 'MultiInputPolicy'
+  callback:
+  # - gym_qco.envs.routing_layer.callbacks.LogQValues
+  - sb3_contrib.common.callbacks.EveryEpisodeEnd:
+      callback: gym_qco.envs.routing_layer.callbacks.OnCircuitRouted
+  eval_callback: 
+    gym_qco.envs.routing_layer.callbacks.RoutingEvaluation:
+      callback_after_eval:
+        stable_baselines3.common.callbacks.StopTrainingOnNoModelImprovement:
+          max_no_improvement_evals: 3
+          min_evals: 5
+  batch_size: 32
+  gradient_steps: -1
+  policy_kwargs:
+    features_extractor_class: gym_qco.envs.routing_layer.cnn.LayerDictCNNExtractor
+  env_kwargs:
+    observation: 'GateIndexDict'
+    action_space: 'SwapOnly'
+    reward_scheme: 'NoPenaltyForFixingViolation_v3'
+
+
+gym_qco/routing-layer-chalmers-9-v0:
+  n_timesteps: !!float 2e5
+  policy: 'MlpPolicy'
+  callback:
+  # - gym_qco.envs.routing_layer.callbacks.LogQValues
+  - sb3_contrib.common.callbacks.EveryEpisodeEnd:
+      callback: gym_qco.envs.routing_layer.callbacks.OnCircuitRouted
+  eval_callback: 
+    gym_qco.envs.routing_layer.callbacks.RoutingEvaluation:
+      callback_after_eval:
+        stable_baselines3.common.callbacks.StopTrainingOnNoModelImprovement:
+          max_no_improvement_evals: 3
+          min_evals: 5
+  batch_size: 32
+  gradient_steps: -1

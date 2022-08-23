@@ -382,7 +382,6 @@ class ExperimentManager:
         if pol_key in hyperparams.keys() and ext_key in hyperparams[pol_key].keys():
             if ext_key in hyperparams[pol_key].keys() and isinstance(hyperparams[pol_key][ext_key], str):
                 hyperparams[pol_key][ext_key] = get_extractor_class(hyperparams[pol_key])
-        print(hyperparams)
 
         # Delete keys so the dict can be pass to the model constructor
         if "n_envs" in hyperparams.keys():

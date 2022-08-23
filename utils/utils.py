@@ -15,6 +15,7 @@ from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike  # noqa: F401
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack, VecNormalize
 
 # For custom activation fn
@@ -47,6 +48,50 @@ def flatten_dict_observations(env: gym.Env) -> gym.Env:
     except AttributeError:
         keys = env.observation_space.spaces.keys()
         return gym.wrappers.FlattenDictWrapper(env, dict_keys=list(keys))
+
+
+def get_extractor_class(hyperparams: Dict[str, Any], key: str = "features_extractor_class") -> Optional[Callable[[BaseFeaturesExtractor], BaseFeaturesExtractor]]:
+    """
+    Get one or more Gym environment wrapper class specified as a hyper parameter
+    "env_wrapper".
+    Works also for VecEnvWrapper with the key "vec_env_wrapper".
+
+    e.g.
+    env_wrapper: gym_minigrid.wrappers.FlatObsWrapper
+
+    for multiple, specify a list:
+
+    env_wrapper:
+        - utils.wrappers.PlotActionWrapper
+        - utils.wrappers.TimeFeatureWrapper
+
+
+    :param hyperparams:
+    :return: maybe a callable to wrap the environment
+        with one or multiple gym.Wrapper
+    """
+
+    def get_module_name(extractor_name):
+        return ".".join(extractor_name.split(".")[:-1])
+
+    def get_class_name(extractor_name):
+        return extractor_name.split(".")[-1]
+
+    if key in hyperparams.keys():
+        extractor_name = hyperparams.get(key)
+
+        if extractor_name is None:
+            return None
+
+        else:
+            print(get_module_name(extractor_name))
+            extractor_module = importlib.import_module(get_module_name(extractor_name))
+            extractor_class = getattr(extractor_module, get_class_name(extractor_name))
+
+        return extractor_class
+    else:
+        return None
+
 
 
 def get_wrapper_class(hyperparams: Dict[str, Any], key: str = "env_wrapper") -> Optional[Callable[[gym.Env], gym.Env]]:
@@ -187,6 +232,7 @@ def get_callback_list(hyperparams: Dict[str, Any]) -> List[BaseCallback]:
             callbacks.append(callback)
 
     return callbacks
+
 
 def create_test_env(
     env_id: str,

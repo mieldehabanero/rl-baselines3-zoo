@@ -509,6 +509,12 @@ class ExperimentManager:
             self.env_kwargs = hyperparams["env_kwargs"]
             del hyperparams["env_kwargs"]
 
+        policy_kwargs = hyperparams.get("policy_kwargs")
+        if isinstance(policy_kwargs, dict):
+            extractor_class = policy_kwargs.get("features_extractor_class")
+            if isinstance(extractor_class, str):
+                policy_kwargs["features_extractor_class"] = get_class_by_name(extractor_class)
+
         # Delete keys so the dict can be pass to the model constructor
         if "n_envs" in hyperparams.keys():
             del hyperparams["n_envs"]

@@ -19,6 +19,7 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike  # noqa: F401
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv, VecFrameStack, VecNormalize
 
 # For custom activation fn
@@ -48,6 +49,16 @@ ALGOS: dict[str, type[BaseAlgorithm]] = {
 def flatten_dict_observations(env: gym.Env) -> gym.Env:
     assert isinstance(env.observation_space, spaces.Dict)
     return gym.wrappers.FlattenObservation(env)
+
+
+def get_extractor_class(
+    hyperparams: dict[str, Any], key: str = "features_extractor_class"
+) -> type[BaseFeaturesExtractor] | None:
+    """Import the feature extractor class specified in the policy hyperparameters."""
+    extractor_name = hyperparams.get(key)
+    if extractor_name is None:
+        return None
+    return get_class_by_name(extractor_name)
 
 
 def get_wrapper_class(hyperparams: dict[str, Any], key: str = "env_wrapper") -> Callable[[gym.Env], gym.Env] | None:

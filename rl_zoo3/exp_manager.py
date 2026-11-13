@@ -370,6 +370,9 @@ class ExperimentManager:
         if "env_kwargs" in list(hyperparams.keys()):
             env_kwargs = hyperparams["env_kwargs"]
             env_kwargs.update(self.env_kwargs)
+            # Keep evaluation's default linked to the merged training settings.
+            if self.eval_env_kwargs is self.env_kwargs:
+                self.eval_env_kwargs = env_kwargs
             self.env_kwargs = env_kwargs
             del hyperparams["env_kwargs"]
 
